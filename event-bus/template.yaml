@@ -1,0 +1,30 @@
+# Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  AnyCompany Amazon EventBridge event bus
+  
+  EventBus declaration for the AnyCompany sample SaaS application.
+
+Resources:
+  EventBus:
+    Type: AWS::Events::EventBus
+    Properties: 
+      Name: AnyCompany
+  
+  EventBusSSMParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: The ARN of the event bus for other services to consume
+      Name: /EventBusARN
+      Type: String
+      Value: !GetAtt EventBus.Arn
+
+Outputs:
+  EventBusArn:
+    Description: "The ARN of the event bus"
+    Value: !GetAtt EventBus.Arn
+  EventBusName:
+    Description: "The name of the event bus"
+    Value: !GetAtt EventBus.Name
