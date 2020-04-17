@@ -1,3 +1,6 @@
+# Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
@@ -5,35 +8,173 @@ Description: >
 
   Sample SAM Template for customer
   
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
-Globals:
-  Function:
-    Timeout: 3
+Parameters:
+  EventBusName:
+    Description: The name of the EventBridge custom event bus to listen on
+    Type: String
+    Default: AnyCompany
+  
+  PublishEventsFunctionArn:
+    Description: The ARN of the Lambda proxy function which puts events onto your custom event bus
+    Type: String
+    AllowedPattern: "^arn:aws:lambda:[a-zA-Z0-9_.-]+:[0-9]{12}:function:[a-zA-Z0-9_.-]+"
 
 Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  ExpiredSubscriptionRule:
+    Type: AWS::Events::Rule
     Properties:
-      CodeUri: hello-world/
-      Handler: app.lambdaHandler
-      Runtime: nodejs12.x
-      Events:
-        HelloWorld:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
-          Properties:
-            Path: /hello
-            Method: get
+      Description: Listen on the custom event bus for SubscriptionExpired events
+      EventBusName: !Ref EventBusName
+      EventPattern:
+        source:
+          - "com.anycompany"
+        detail-type:
+          - subscription-expired
+      State: ENABLED
+      Targets:
+      - Arn: !Ref ExpiredSubscriptionWorkflow
+        Id: ExpiredSubscriptionWorkflow
+        RoleArn: !GetAtt InvokeWorkflowRole.Arn
 
-Outputs:
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloWorldApi:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-  HelloWorldFunction:
-    Description: "Hello World Lambda Function ARN"
-    Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt HelloWorldFunctionRole.Arn
+  ExpiredSubscriptionWorkflow:
+    Description: Express Workflow for processing expired subscriptions
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: ExpiredSubscriptionProcess
+      RoleArn: !GetAtt ExpiredSubscriptionRole.Arn
+      StateMachineType: EXPRESS
+      LoggingConfiguration:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt AppLogGroup.Arn
+        IncludeExecutionData: true
+        Level: ALL
+      DefinitionString: !Sub
+        - |-
+          {
+            "Comment": "A Hello World example demonstrating various state types of the Amazon States Language",
+            "StartAt": "Process Cancellation",
+            "States": {
+              "Process Cancellation": {
+                "Type": "Parallel",
+                "ResultPath": "$.ProcessCancellationResults",
+                "Branches": [
+                  {
+                    "StartAt": "Suspend All Resources",
+                    "States": {
+                      "Suspend All Resources": {
+                        "Type": "Pass",
+                        "ResultPath": "$.SuspendResourcesResult",
+                        "End": true
+                      }
+                    }
+                  },
+                  {
+                    "StartAt": "Send Expiration Email",
+                    "States": {
+                        "Send Expiration Email": {
+                            "Type": "Pass",
+                            "ResultPath": "$.SendExpirationEmailResult",
+                            "End": true
+                        }
+                    }
+                  }
+                ],
+                "Next": "Publish to EventBridge"
+              },
+              "Publish to EventBridge": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::lambda:invoke",
+                "Parameters": {
+                  "FunctionName": "${PublishEventsFunctionArn}",
+                  "Payload": {
+                    "EventBusName": "${EventBusName}",
+                    "Source.$": "$.source",
+                    "DetailType": "expiration-processed",
+                    "Detail.$": "$.detail"
+                  }
+                },
+                "End": true
+              }
+            }
+          }
+        - {
+            EventBusName: !Ref EventBusName,
+            PublishEventsFunctionArn: !Ref PublishEventsFunctionArn
+          }
+
+  AppLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /customer
+      RetentionInDays: 7 # optional
+
+  ExpiredSubscriptionRole:
+    Description: IAM Role for our Expired Subscription workflow
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ExpressWorkflowLoggerPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogDelivery
+                  - logs:CreateLogGroup
+                  - logs:DeleteLogDelivery
+                  - logs:DescribeResourcePolicies
+                  - logs:GetLogDelivery
+                  - logs:ListLogDeliveries
+                  - logs:PutResourcePolicy
+                  - logs:UpdateLogDelivery
+                Resource:
+                  # These actions do not support resource-level permissions.
+                  # Policies granting access must specify "*" in the resource element.
+                  - "*" 
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                  - logs:PutLogEvents
+                Resource:
+                  # AWS::Logs::LogGroup.Arn ends with ":*" so it matches:
+                  #   - log-group (required by logs:CreateLogStream, logs:DescribeLogGroups, and logs:DescribeLogStreams)
+                  #   - log-stream (required by logs:PutLogEvents)
+                  - !GetAtt AppLogGroup.Arn
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !Ref PublishEventsFunctionArn
+
+  InvokeWorkflowRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeExpressWorkflowLoggerPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - states:StartExecution
+                Resource:
+                  - !Ref ExpiredSubscriptionWorkflow
