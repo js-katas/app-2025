@@ -14,32 +14,45 @@ In the [first episode][first-episode] of App 2025, viewers learn a high-level pa
 
 In the [second episode][second-episode] of App 2025, viewers learn a second high-level pattern for building serverless applications. AWS Step Functions [Express Workflows][express-workflows] are introduced for building high-volume, short-duration workflows. Express and Standard Workflows are compared and a rubric is provided for when to select each. The workflow event loop pattern is introduced: an event on an EventBridge event bus satisfies a rule and invokes an Express Workflow as a target. Once the workflow completes, a “ProcessCompleted” event is placed back onto the bus for further processing.
 
+### Waiting for interactions with callbacks
+
+In the [third episode][third-episode] of App 2025, viewers learn how to pause execution of AWS Step Functions workflows using [callbacks][callbacks]. AWS Step Functions [Standard Workflows][standard-workflows] are introduced for building lower-volume, longer-running workflows. The _.waitTaskToken_ callback pattern is introduced for tasks that involve human interaction, are longer-running, or are cost-sensitive. Supported services are introduced, and _SendTaskSuccess_, _SendTaskFailure_, and _SendTaskHeartbeat_ are discussed.
+
 ## Upcoming Sessions (subject to change):
 
-* 23 April - Waiting for human interaction with the [callback pattern][callback-pattern]
-* 30 April - Notifying users with [Amazon SNS][sns]
+* 30 April - Simplifying your architecture with [Amazon SNS][sns] and [Amazon SQS][sqs]
+* 07 May - Securing your workloads with [Amazon SNS][sns] and [Amazon SQS][sqs]
+* 14 May - Enhancing the durability of your workloads with [Amazon SNS][sns] and [Amazon SQS][sqs] dead-letter queues (DLQs)
+* 21 May - Service integrations for storing data
+* 28 May - Serverless reporting with [Amazon Athena][athena]
 
 ## Deploying the app
 
 1. First, [deploy the infrastructure][deploy-infrastructure].
 1. Next, [deploy the customer microservice][deploy-customer].
+1. Finally, [deploy the simulator app][deploy-simulator].
 
 Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 
+[athena]: https://aws.amazon.com/athena/
 [aws]: https://aws.amazon.com/
-[callback-pattern]: https://docs.aws.amazon.com/step-functions/latest/dg/connect-to-resource.html#connect-wait-token
+[callbacks]: https://docs.aws.amazon.com/step-functions/latest/dg/connect-to-resource.html#connect-wait-token
 [eventbridge]: https://aws.amazon.com/eventbridge/
 [express-workflows]: https://aws.amazon.com/about-aws/whats-new/2019/12/introducing-aws-step-functions-express-workflows/
 [iam]: https://aws.amazon.com/iam/
 [sam-cli]: https://github.com/awslabs/aws-sam-cli/
 [serverless]: https://aws.amazon.com/serverless/
 [sns]: https://aws.amazon.com/sns/
+[sqs]: https://aws.amazon.com/sqs/
+[standard-workflows]: https://docs.aws.amazon.com/step-functions/latest/dg/concepts-standard-vs-express.html
 [step-functions]: https://aws.amazon.com/step-functions/
 [twitch]: https://twitch.tv/robsutter/
 
 [first-episode]: https://youtu.be/jYmZH7j_MXA?t=80
 [second-episode]: https://youtu.be/pdc6oorQ3lE
+[third-episode]: https://youtu.be/raFNW7KdehE
 
 [deploy-infrastructure]: infrastructure/
 [deploy-customer]: customer/
+[deploy-simulator]: simulator/

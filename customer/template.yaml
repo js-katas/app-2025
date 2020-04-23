@@ -6,7 +6,7 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   customer
 
-  Sample SAM Template for customer
+  SAM Template for the customer microservice
   
 Parameters:
   EventBusName:
@@ -20,6 +20,120 @@ Parameters:
     AllowedPattern: "^arn:aws:lambda:[a-zA-Z0-9_.-]+:[0-9]{12}:function:[a-zA-Z0-9_.-]+"
 
 Resources:
+################################################################################
+# Standard Workflow example
+################################################################################
+  AccountCreatedRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Listen on the custom event bus for AccountCreated events
+      EventBusName: !Ref EventBusName
+      EventPattern:
+        source:
+          - com.anycompany
+        detail-type:
+          - account-created
+      # State: ENABLED
+      Targets:
+        - Arn: !Ref NormalizeAccountWorkflow
+          Id: NormalizeAccountWorkflow
+          RoleArn: !GetAtt InvokeWorkflowRole.Arn
+  
+  NormalizeAccountWorkflow:
+    Description: Standard Workflow for normalizing and cleaning newly-created accounts
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: NormalizeAccountProcess
+      RoleArn: !GetAtt NormalizeAccountRole.Arn
+      StateMachineType: STANDARD
+      DefinitionString: !Sub
+        - |-
+          {
+            "Comment": "An example of the Amazon States Language using a choice state.",
+            "StartAt": "Add to CRM",
+            "States": {
+              "Add to CRM": {
+                "Type": "Pass",
+                "Result": {
+                  "customer_id": "1auNYzW4PFkLxcxexCCX2bcWgDx"
+                },
+                "ResultPath": "$.detail.crm_data",
+                "Next": "Send for Normalization"
+              },
+              "Send for Normalization": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+                "Parameters": {
+                  "QueueUrl": "${AccountCreationQueueUrl}",
+                  "MessageBody": {
+                    "Message.?": "$.detail.crm_data",
+                    "TaskToken.$": "$$.Task.Token"
+                  }
+                },
+                "ResultPath": "$.detail.normalizationResults",
+                "Next": "Publish AccountNormalized Event"
+              },
+              "Publish AccountNormalized Event": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::lambda:invoke",
+                "Parameters": {
+                  "FunctionName": "${PublishEventsFunctionArn}",
+                  "Payload": {
+                    "EventBusName": "${EventBusName}",
+                    "Source.$": "$.source",
+                    "DetailType": "account-normalized",
+                    "Detail.$": "$.detail"
+                  }
+                },
+                "End": true
+              }
+            }
+          }
+        - {
+            EventBusName: !Ref EventBusName,
+            PublishEventsFunctionArn: !Ref PublishEventsFunctionArn,
+            AccountCreationQueueUrl: !Ref AccountCreationQueue
+          }
+
+  NormalizeAccountRole:
+    Description: IAM Role for our Normalize Account workflow
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SendToQueue
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource:
+                  - !GetAtt AccountCreationQueue.Arn
+        - PolicyName: PublishEventsPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !Ref PublishEventsFunctionArn
+  
+  AccountCreationQueue:
+    Description: SQS queue for processing accounts that need to be normalized.
+    Type: AWS::SQS::Queue
+
+################################################################################
+# Express Workflow example
+################################################################################
   ExpiredSubscriptionRule:
     Type: AWS::Events::Rule
     Properties:
@@ -27,10 +141,10 @@ Resources:
       EventBusName: !Ref EventBusName
       EventPattern:
         source:
-          - "com.anycompany"
+          - com.anycompany
         detail-type:
           - subscription-expired
-      State: ENABLED
+      # State: ENABLED
       Targets:
       - Arn: !Ref ExpiredSubscriptionWorkflow
         Id: ExpiredSubscriptionWorkflow
@@ -80,9 +194,9 @@ Resources:
                     }
                   }
                 ],
-                "Next": "Publish to EventBridge"
+                "Next": "Publish ExpirationProcessed Event"
               },
-              "Publish to EventBridge": {
+              "Publish ExpirationProcessed Event": {
                 "Type": "Task",
                 "Resource": "arn:aws:states:::lambda:invoke",
                 "Parameters": {
@@ -122,7 +236,7 @@ Resources:
                 - !Sub states.${AWS::Region}.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: ExpressWorkflowLoggerPolicy
+        - PolicyName: ExpressWorkflowLogsPolicy
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -151,12 +265,20 @@ Resources:
                   #   - log-group (required by logs:CreateLogStream, logs:DescribeLogGroups, and logs:DescribeLogStreams)
                   #   - log-stream (required by logs:PutLogEvents)
                   - !GetAtt AppLogGroup.Arn
+        - PolicyName: PublishEventsPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
               - Effect: Allow
                 Action:
                   - lambda:InvokeFunction
                 Resource:
                   - !Ref PublishEventsFunctionArn
 
+################################################################################
+# Shared role allowing Amazon EventBridge rules to invoke AWS Step Functions
+# workflows in the Customer microservice
+################################################################################
   InvokeWorkflowRole:
     Type: AWS::IAM::Role
     Properties:
@@ -169,7 +291,7 @@ Resources:
                 - events.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: InvokeExpressWorkflowLoggerPolicy
+        - PolicyName: InvokeCustomerWorkflowsPolicy
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -178,3 +300,15 @@ Resources:
                   - states:StartExecution
                 Resource:
                   - !Ref ExpiredSubscriptionWorkflow
+                  - !Ref NormalizeAccountWorkflow
+
+################################################################################
+# CloudFormation outputs for use in other stacks.
+################################################################################
+Outputs:
+  AccountQueueArn:
+    Description: The URL of the AccountCreationQueue for deploying the simulator app.
+    Value: !GetAtt AccountCreationQueue.Arn
+  StateMachineArn:
+    Description: The ARN of the NormalizeAccountWorkflow for deploying the simulator app.
+    Value: !Ref NormalizeAccountWorkflow

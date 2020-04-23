@@ -13,13 +13,26 @@ This is the home of the underlying infrastructure for the App 2025 **AnyCompany*
     sam deploy --guided
     ```
     * At the **Stack Name** prompt, enter `app2025-infrastructure`
+    
+1. Record the values of the _EventBusName_ and _PublishEventsFunctionArn_ CloudFormation outputs to use in deploying the [customer microservice][customer].
 
 ## Placing events onto the bus
 
 From this directory:
 
+### Episode 2 events
+
 ```bash
-aws events put-events --entries file://putevents.json
+aws events put-events --entries file://events/episode2.json
+```
+This places five sample events of various types from various sources onto the custom event bus you created.
+
+### Episode 3 events
+
+```bash
+aws events put-events --entries file://events/episode2.json
 ```
 
-This places five sample events onto the custom event bus you created.
+This places a single sample _account-created_ event onto the custom event bus you created.
+
+[customer]: ../customer
