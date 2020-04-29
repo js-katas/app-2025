@@ -32,6 +32,10 @@ In the [third episode][third-episode] of App 2025, viewers learn how to pause ex
 1. Next, [deploy the customer microservice][deploy-customer].
 1. Finally, [deploy the simulator app][deploy-simulator].
 
+## Episode transcripts
+
+Machine-generated transcripts for each episode are available in the [transcripts](transcripts) directory.
+
 Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 
