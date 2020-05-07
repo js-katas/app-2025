@@ -18,18 +18,21 @@ In the [second episode][second-episode] of App 2025, viewers learn a second high
 
 In the [third episode][third-episode] of App 2025, viewers learn how to pause execution of AWS Step Functions workflows using [callbacks][callbacks]. AWS Step Functions [Standard Workflows][standard-workflows] are introduced for building lower-volume, longer-running workflows. The _.waitTaskToken_ callback pattern is introduced for tasks that involve human interaction, are longer-running, or are cost-sensitive. Supported services are introduced, and _SendTaskSuccess_, _SendTaskFailure_, and _SendTaskHeartbeat_ are discussed.
 
+### Simplifying your architecture with Amazon SNS and Amazon SQS
+
+In the [fourth episode][fourth-episode] of App 2025, viewers learn how to use [Amazon SNS][sns] topics and [Amazon SQS][sqs] queues to simplify the App 2025 architecture. The stability of SNS and SQS is demonstrated by a review of their long history. SNS topics and subscriber endpoints are introduced, as are SQS standard and FIFO queues. The "buffered fanout" pattern is presented to demonstrate how SNS, SQS, and EventBridge complement one another.
+
 ## Upcoming Sessions (subject to change):
 
-* 30 April - Simplifying your architecture with [Amazon SNS][sns] and [Amazon SQS][sqs]
-* 07 May - Securing your workloads with [Amazon SNS][sns] and [Amazon SQS][sqs]
 * 14 May - Enhancing the durability of your workloads with [Amazon SNS][sns] and [Amazon SQS][sqs] dead-letter queues (DLQs)
 * 21 May - Service integrations for storing data
-* 28 May - Serverless reporting with [Amazon Athena][athena]
+* 04 June - Serverless reporting with [Amazon Athena][athena]
 
 ## Deploying the app
 
 1. First, [deploy the infrastructure][deploy-infrastructure].
 1. Next, [deploy the customer microservice][deploy-customer].
+1. Next, [deploy the operations microservice][deploy-operations].
 1. Finally, [deploy the simulator app][deploy-simulator].
 
 ## Episode transcripts
@@ -56,7 +59,9 @@ SPDX-License-Identifier: Apache-2.0
 [first-episode]: https://youtu.be/jYmZH7j_MXA?t=80
 [second-episode]: https://youtu.be/pdc6oorQ3lE
 [third-episode]: https://youtu.be/raFNW7KdehE
+[fourth-episode]: https://youtu.be/krBKiABQJAk
 
 [deploy-infrastructure]: infrastructure/
 [deploy-customer]: customer/
+[deploy-operations]: operations/
 [deploy-simulator]: simulator/

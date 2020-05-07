@@ -12,5 +12,8 @@ This is the home of the _customer_ microservice for the App 2025 **AnyCompany** 
     * When prompted for a value for the _PublishEventsFunctionArn_ parameter, use the value of the _PublishEventsFunctionArn_ CloudFormation output from step one.
 1. Record the values of the _AccountQueueArn_ and _StateMachineArn_ CloudFormation outputs to use in deploying the [simulator app][simulator]. 
 
+Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+
 [infrastructure]: ../infrastructure/
 [simulator]: ../simulator/

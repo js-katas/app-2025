@@ -14,7 +14,7 @@ This is the home of the underlying infrastructure for the App 2025 **AnyCompany*
     ```
     * At the **Stack Name** prompt, enter `app2025-infrastructure`
     
-1. Record the values of the _EventBusName_ and _PublishEventsFunctionArn_ CloudFormation outputs to use in deploying the [customer microservice][customer].
+1. Record the values of the _EventBusName_ and _PublishEventsFunctionArn_ CloudFormation outputs to use in deploying the [customer][customer] and [operations][operations] microservices.
 
 ## Placing events onto the bus
 
@@ -35,4 +35,8 @@ aws events put-events --entries file://events/episode2.json
 
 This places a single sample _account-created_ event onto the custom event bus you created.
 
+Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+
 [customer]: ../customer
+[operations]: ../operations
