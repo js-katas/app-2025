@@ -22,17 +22,21 @@ In the [third episode][third-episode] of App 2025, viewers learn how to pause ex
 
 In the [fourth episode][fourth-episode] of App 2025, viewers learn how to use [Amazon SNS][sns] topics and [Amazon SQS][sqs] queues to simplify the App 2025 architecture. The stability of SNS and SQS is demonstrated by a review of their long history. SNS topics and subscriber endpoints are introduced, as are SQS standard and FIFO queues. The "buffered fanout" pattern is presented to demonstrate how SNS, SQS, and EventBridge complement one another.
 
+### Storing data with service integrations
+
+In the [fifth episode][fifth-episode] of App 2025, viewers learn how to use service integrations to store data persistently without invoking [AWS Lambda][lambda] functions. [Amazon Kinesis Data Firehose][firehose] is introduced as a serverless solution for ingesting streaming data and target for Amazon EventBridge rules. EventBridge input transformers are compared to Lambda functions as a mechanism for modifying data with Kinesis Data Firehose. The AWS Step Functions service integration with [Amazon DynamoDB][dynamodb] is discussed. Pass States are compared to Lambda functions as a mechanism for modifying data with Step Functions. An AWS SAM template is built that demonstrates how streaming data can be captured and stored for OLAP in [Amazon S3][s3] by Kinesis Data Firehose while concurrently being used for OLTP with Step Functions and DynamoDB – all serverlessly.
+
+
 ## Upcoming Sessions (subject to change):
 
-* 14 May - Enhancing the durability of your workloads with [Amazon SNS][sns] and [Amazon SQS][sqs] dead-letter queues (DLQs)
-* 21 May - Service integrations for storing data
-* 04 June - Serverless reporting with [Amazon Athena][athena]
+* 21 May - Serverless reporting with [Amazon Athena][athena]
 
 ## Deploying the app
 
 1. First, [deploy the infrastructure][deploy-infrastructure].
 1. Next, [deploy the customer microservice][deploy-customer].
 1. Next, [deploy the operations microservice][deploy-operations].
+1. Next, [deploy the billing microservice][deploy-billing].
 1. Finally, [deploy the simulator app][deploy-simulator].
 
 ## Episode transcripts
@@ -45,9 +49,13 @@ SPDX-License-Identifier: Apache-2.0
 [athena]: https://aws.amazon.com/athena/
 [aws]: https://aws.amazon.com/
 [callbacks]: https://docs.aws.amazon.com/step-functions/latest/dg/connect-to-resource.html#connect-wait-token
+[dynamodb]: https://aws.amazon.com/dynamodb/
 [eventbridge]: https://aws.amazon.com/eventbridge/
 [express-workflows]: https://aws.amazon.com/about-aws/whats-new/2019/12/introducing-aws-step-functions-express-workflows/
+[firehose]: https://aws.amazon.com/kinesis/data-firehose/
 [iam]: https://aws.amazon.com/iam/
+[lambda]: https://aws.amazon.com/lambda/
+[s3]: https://aws.amazon.com/s3/
 [sam-cli]: https://github.com/awslabs/aws-sam-cli/
 [serverless]: https://aws.amazon.com/serverless/
 [sns]: https://aws.amazon.com/sns/
@@ -60,8 +68,10 @@ SPDX-License-Identifier: Apache-2.0
 [second-episode]: https://youtu.be/pdc6oorQ3lE
 [third-episode]: https://youtu.be/raFNW7KdehE
 [fourth-episode]: https://youtu.be/krBKiABQJAk
+[fifth-episode]: https://youtu.be/_nseply4SPc
 
 [deploy-infrastructure]: infrastructure/
 [deploy-customer]: customer/
 [deploy-operations]: operations/
+[deploy-billing]: billing/
 [deploy-simulator]: simulator/
